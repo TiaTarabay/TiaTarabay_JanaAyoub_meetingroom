@@ -1,0 +1,70 @@
+version: "3.9"
+
+volumes:
+  db_data: 
+
+services:
+  db:
+    image: postgres:16
+    container_name: smartmeetingroom_db
+    environment:
+      - POSTGRES_DB=smartmeetingroom
+      - POSTGRES_USER=smartuser
+      - POSTGRES_PASSWORD=smartpassword
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
+  users_service:
+    build:
+      context: ./users_service
+      dockerfile: Dockerfile
+    container_name: users_service
+    ports:
+      - "5000:5000"
+    depends_on:
+      - db
+    environment:
+      - FLASK_ENV=production
+      - DATABASE_URL=postgresql+psycopg2://smartuser:smartpassword@db:5432/smartmeetingroom
+
+  rooms_service:
+    build:
+      context: ./rooms_service
+      dockerfile: Dockerfile
+    container_name: rooms_service
+    ports:
+      - "5001:5000"
+    depends_on:
+      - db
+    environment:
+      - FLASK_ENV=production
+      - DATABASE_URL=postgresql+psycopg2://smartuser:smartpassword@db:5432/smartmeetingroom
+
+  bookings_service:
+    build:
+      context: ./bookings_service
+      dockerfile: Dockerfile
+    container_name: bookings_service
+    ports:
+      - "5002:5000"
+    depends_on:
+      - db
+    environment:
+      - FLASK_ENV=production
+      - DATABASE_URL=postgresql+psycopg2://smartuser:smartpassword@db:5432/smartmeetingroom
+
+  reviews_service:
+    build:
+      context: ./reviews_service
+      dockerfile: Dockerfile
+    container_name: reviews_service
+    ports:
+      - "5003:5000"
+    depends_on:
+      - db
+    environment:
+      - FLASK_ENV=production
+      - DATABASE_URL=postgresql+psycopg2://smartuser:smartpassword@db:5432/smartmeetingroom
