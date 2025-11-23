@@ -23,13 +23,15 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 #   Password Helper Functions
 
 def get_password_hash(password: str) -> str:
-    """Hash a password using bcrypt."""
-    return pwd_context.hash(password)
+    # bcrypt max = 72 bytes → truncate safely
+    safe_password = password[:72]
+    return pwd_context.hash(safe_password)
 
 
-def verify_password(plain: str, hashed: str) -> bool:
-    """Check if the plain password matches the hashed one."""
-    return pwd_context.verify(plain, hashed)
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    safe_password = plain_password[:72]
+    return pwd_context.verify(safe_password, hashed_password)
 
 
 
