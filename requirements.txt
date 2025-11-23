@@ -1,5 +1,7 @@
-fastapi
-uvicorn
+flask
 sqlalchemy
-passlib[bcrypt]
-pydantic
+
+psycopg2-binary
+alembic
+python-dotenv
+sphinx
