@@ -24,9 +24,17 @@ router = APIRouter()
 
 # Helper wrappers for shared get_current_user
 
-def CurrentUser(dep=Depends(get_db)):
-    """Injects get_current_user with the correct model"""
-    return get_current_user(db=dep, user_model=User)
+from fastapi import Depends
+from fastapi.security import OAuth2PasswordBearer
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/login")
+
+def CurrentUser(
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db),
+):
+    return get_current_user(token=token, db=db, user_model=User)
+
 
 
 # RBAC helpers
@@ -122,6 +130,21 @@ def update_profile(user_id: int, info: UserUpdate, db: Session = Depends(get_db)
     db.commit()
     db.refresh(user)
     return {"msg": "Profile updated", "user_id": user.id}
+
+# Regular user delete own account
+@router.delete("/me", status_code=204)
+def delete_own_account(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(CurrentUser),
+):
+    user = db.query(User).filter(User.id == current_user.id).first()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    db.delete(user)
+    db.commit()
+    return
 
 
 # Booking history placeholder
