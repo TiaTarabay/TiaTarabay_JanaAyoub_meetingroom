@@ -195,8 +195,6 @@ def get_all_users(
     require_admin_or_auditor(current_user)
     return db.query(User).all()
 
-
-# Admin/Auditor: Get user by username
 @router.get("/users/username/{username}", response_model=UserRead)
 def get_user_by_username(
     username: str,
@@ -210,7 +208,6 @@ def get_user_by_username(
         raise HTTPException(status_code=404, detail="User not found")
 
     return user
-
 
 
 # Admin: update user
