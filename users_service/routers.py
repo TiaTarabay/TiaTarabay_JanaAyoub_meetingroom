@@ -196,20 +196,21 @@ def get_all_users(
     return db.query(User).all()
 
 
-# Admin/Auditor: Get user by ID
-@router.get("/users/{user_id}", response_model=UserRead)
-def get_user_by_id(
-    user_id: int,
+# Admin/Auditor: Get user by username
+@router.get("/users/username/{username}", response_model=UserRead)
+def get_user_by_username(
+    username: str,
     db: Session = Depends(get_db),
     current_user: User = Depends(CurrentUser),
 ):
     require_admin_or_auditor(current_user)
 
-    user = db.query(User).filter(User.id == user_id).first()
+    user = db.query(User).filter(User.username == username).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
     return user
+
 
 
 # Admin: update user
