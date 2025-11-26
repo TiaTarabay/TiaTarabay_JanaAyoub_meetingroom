@@ -24,6 +24,56 @@ from typing import Optional
 from sqlalchemy.orm import Session
 from common.db.connection import engine, Base, SessionLocal
 from bookings_service.models import Booking
+import os
+
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
+
+
+MFA_DELETE_BOOKING_CODE = os.environ.get("MFA_DELETE_BOOKING_CODE", "123456")
+
+from flask import request, jsonify
+
+def verify_mfa_for_delete() -> bool:
+    """
+    Verify MFA code for sensitive booking operations (e.g., delete).
+
+    Expects header: X-MFA-Code
+    """
+    provided = request.headers.get("X-MFA-Code")
+    return provided is not None and provided == MFA_DELETE_BOOKING_CODE
+
+SENDGRID_API_KEY = os.environ.get("SENDGRID_API_KEY")
+SENDGRID_FROM_EMAIL = os.environ.get("SENDGRID_FROM_EMAIL", "no-reply@example.com")
+print("SENDGRID_API_KEY present:", bool(SENDGRID_API_KEY))
+print("SENDGRID_FROM_EMAIL:", SENDGRID_FROM_EMAIL)
+
+
+def send_booking_email(to_email: str, subject: str, body: str) -> None:
+    print(">> send_booking_email called for:", to_email)
+
+    if not SENDGRID_API_KEY:
+        print("SENDGRID_API_KEY not set, skipping email send")
+        return
+
+    print("Using FROM:", SENDGRID_FROM_EMAIL)
+
+    message = Mail(
+        from_email=SENDGRID_FROM_EMAIL,
+        to_emails=to_email,
+        subject=subject,
+        plain_text_content=body,
+    )
+
+    try:
+        sg = SendGridAPIClient(SENDGRID_API_KEY)
+        response = sg.send(message)
+        print(f"SendGrid status={response.status_code}")
+        print("SendGrid response headers:", response.headers)
+    except Exception as e:
+        print(f"Error sending email via SendGrid: {e}")
+
+
 
 # Create tables if they don't exist
 Base.metadata.create_all(bind=engine)
@@ -273,6 +323,15 @@ def create_booking():
         db.commit()
         db.refresh(booking)
 
+        user_email = "jaa102@mail.aub.edu"
+
+        send_booking_email(
+            to_email=user_email,
+            subject="Booking confirmed",
+            body=f"Your booking #{booking.id} for room {booking.room_id} is confirmed on {booking.start_time}."
+        )
+
+
         return jsonify({
             "id": booking.id,
             "user_id": booking.user_id,
@@ -405,9 +464,22 @@ def cancel_booking(booking_id: int):
             booking_owner_id=booking.user_id,
         ):
             return jsonify({"error": "Forbidden"}), 403
+        
+        # ---- MFA check for delete ----
+        if not verify_mfa_for_delete():
+            return jsonify({"error": "MFA required or invalid code"}), 403
 
         booking.status = "CANCELLED"
         db.commit()
+
+        user_email = "jaa102@mail.aub.edu"
+
+        send_booking_email(
+            to_email=user_email,
+            subject="Booking cancelled",
+            body=f"Your booking #{booking.id} for room {booking.room_id} has been cancelled."
+        )
+
         return jsonify({"message": "Booking cancelled"}), 200
     finally:
         db.close()
