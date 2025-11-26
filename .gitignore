@@ -5,3 +5,6 @@ smartmeetingroom.db
 .env
 
 docs/_build/
+
+.coverage
+*.prof

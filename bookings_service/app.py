@@ -465,8 +465,8 @@ def cancel_booking(booking_id: int):
         ):
             return jsonify({"error": "Forbidden"}), 403
         
-        # ---- MFA check for delete ----
-        if not verify_mfa_for_delete():
+        # ---- MFA check for delete: required for non-admin roles ----
+        if role != "admin" and not verify_mfa_for_delete():
             return jsonify({"error": "MFA required or invalid code"}), 403
 
         booking.status = "CANCELLED"
