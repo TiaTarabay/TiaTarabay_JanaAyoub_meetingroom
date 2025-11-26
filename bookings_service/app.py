@@ -18,6 +18,9 @@ The service uses SQLAlchemy with a shared PostgreSQL database (configured in
 from flask import Flask, request, jsonify
 from datetime import datetime
 
+from functools import wraps
+from typing import Optional
+
 from sqlalchemy.orm import Session
 from common.db.connection import engine, Base, SessionLocal
 from bookings_service.models import Booking
@@ -42,6 +45,103 @@ def get_db() -> Session:
     return db
 
 
+# Simple RBAC helpers for Bookings service
+def get_current_role() -> str:
+    """
+    Get the role of the current caller from the HTTP headers.
+
+    In a real system, this would be extracted from a JWT token or API gateway.
+    For this project, we use the ``X-Role`` header.
+
+    Possible values: ``admin``, ``regular_user``, ``facility_manager``,
+    ``moderator``, ``auditor``, ``service_account``.
+    """
+    return request.headers.get("X-Role", "regular_user")
+
+
+def get_current_user_id() -> Optional[int]:
+    """
+    Get the authenticated user ID from the HTTP headers.
+
+    For demo purposes, we read it from ``X-User-Id``.
+    Returns ``None`` if not provided or invalid.
+    """
+    raw = request.headers.get("X-User-Id")
+    if raw is None:
+        return None
+    try:
+        return int(raw)
+    except ValueError:
+        return None
+
+
+def can_do_booking_action(
+    role: str,
+    action: str,
+    *,
+    booking_owner_id: Optional[int] = None,
+    target_user_id: Optional[int] = None,
+) -> bool:
+    """
+    Central RBAC function for the Bookings service.
+
+    :param role: Current caller role (e.g. ``"admin"``).
+    :param action: Logical action name (e.g. ``"get_all"``, ``"create"``,
+                   ``"update"``, ``"cancel"``, ``"user_history"``,
+                   ``"check_availability"``).
+    :param booking_owner_id: User ID that owns the booking (if relevant).
+    :param target_user_id: User ID whose history is being requested (if relevant).
+    :returns: True if the caller is allowed to perform this action.
+    """
+
+    # Admin can do everything on bookings
+    if role == "admin":
+        return True
+
+    if action == "get_all":
+        # Can view all bookings: facility manager + auditor (+ service accounts if needed)
+        return role in {"facility_manager", "auditor", "service_account"}
+
+    if action == "create":
+        # Regular users and facility managers can create their own bookings
+        return role in {"regular_user", "facility_manager", "moderator"}
+
+    if action in {"update", "cancel"}:
+        # For update/cancel we need the owner id
+        if booking_owner_id is None:
+            return False
+
+        if role in {"regular_user", "facility_manager", "moderator"}:
+            # Can only update/cancel their own bookings
+            current_user_id = get_current_user_id()
+            return current_user_id is not None and current_user_id == booking_owner_id
+
+        # Other roles (moderator, auditor, service_account) cannot modify bookings
+        return False
+
+    if action == "user_history":
+        if role in {"facility_manager", "auditor", "service_account"}:
+            # Can see any user's history
+            return True
+        if role in {"regular_user", "moderator"}:
+            # Can only see their own booking history
+            current_user_id = get_current_user_id()
+            return (
+                current_user_id is not None
+                and target_user_id is not None
+                and current_user_id == target_user_id
+            )
+        # Others (moderator, service_account) have no access by default
+        return False
+
+    if action == "check_availability":
+        # Everyone except maybe auditor is allowed; here we allow all roles
+        return True
+
+    # Default deny
+    return False
+
+
 @app.route("/bookings", methods=["GET"])
 def get_all_bookings():
     """
@@ -62,6 +162,9 @@ def get_all_bookings():
     :returns: JSON list of all booking records.
     :rtype: flask.Response
     """
+    role = get_current_role()
+    if not can_do_booking_action(role, "get_all"):
+        return jsonify({"error": "Forbidden"}), 403
     db = get_db()
     try:
         bookings = db.query(Booking).all()
@@ -106,11 +209,14 @@ def create_booking():
 
         - ``201`` – Booking created successfully. Returns the created booking.
         - ``400`` – Missing fields or invalid date/time values.
+        - ``403`` – RBAC: user not allowed to create this booking.
         - ``409`` – Room is already booked in the requested time slot.
-
-    :returns: JSON with the created booking or an error message.
-    :rtype: flask.Response
     """
+    # ---- RBAC: role-level permission ----
+    role = get_current_role()
+    if not can_do_booking_action(role, "create"):
+        return jsonify({"error": "Forbidden"}), 403
+
     data = request.get_json()
     if not data:
         return jsonify({"error": "Missing JSON body"}), 400
@@ -119,6 +225,16 @@ def create_booking():
     for field in required:
         if field not in data:
             return jsonify({"error": f"Missing field: {field}"}), 400
+
+    # ---- Self-only check for normal users and moderators ----
+    current_user_id = get_current_user_id()
+    if role in {"regular_user", "moderator"}:
+        body_user_id = int(data["user_id"])
+        if current_user_id is None or current_user_id != body_user_id:
+            return jsonify({
+                "error": "Users can only create bookings for themselves"
+            }), 403
+    # facility_manager and admin are allowed to create for others
 
     try:
         start = datetime.fromisoformat(data["start_time"])
@@ -169,6 +285,7 @@ def create_booking():
         db.close()
 
 
+
 @app.route("/bookings/<int:booking_id>", methods=["PUT"])
 def update_booking(booking_id: int):
     """
@@ -203,6 +320,7 @@ def update_booking(booking_id: int):
     :returns: JSON with the updated booking or an error message.
     :rtype: flask.Response
     """
+    role = get_current_role()
     data = request.get_json() or {}
 
     db = get_db()
@@ -210,6 +328,14 @@ def update_booking(booking_id: int):
         booking = db.query(Booking).get(booking_id)
         if not booking:
             return jsonify({"error": "Booking not found"}), 404
+        
+        role = get_current_role()
+        if not can_do_booking_action(
+            role,
+            "update",
+            booking_owner_id=booking.user_id,
+        ):
+            return jsonify({"error": "Forbidden"}), 403
 
         if "room_id" in data and data["room_id"] is not None:
             booking.room_id = data["room_id"]
@@ -265,11 +391,20 @@ def cancel_booking(booking_id: int):
     :returns: JSON confirmation message or error.
     :rtype: flask.Response
     """
+    role = get_current_role()
     db = get_db()
     try:
         booking = db.query(Booking).get(booking_id)
         if not booking:
             return jsonify({"error": "Booking not found"}), 404
+
+        role = get_current_role()
+        if not can_do_booking_action(
+            role,
+            "cancel",
+            booking_owner_id=booking.user_id,
+        ):
+            return jsonify({"error": "Forbidden"}), 403
 
         booking.status = "CANCELLED"
         db.commit()
@@ -305,6 +440,10 @@ def check_availability():
     :returns: JSON with room ID and availability flag.
     :rtype: flask.Response
     """
+    role = get_current_role()
+    if not can_do_booking_action(role, "check_availability"):
+        return jsonify({"error": "Forbidden"}), 403
+
     room_id = request.args.get("room_id")
     start_time = request.args.get("start_time")
     end_time = request.args.get("end_time")
@@ -367,6 +506,13 @@ def get_user_booking_history(user_id: int):
     :returns: JSON list of bookings for the given user.
     :rtype: flask.Response
     """
+    role = get_current_role()
+    if not can_do_booking_action(
+        role,
+        "user_history",
+        target_user_id=user_id,
+    ):
+        return jsonify({"error": "Forbidden"}), 403
     db = get_db()
     try:
         bookings = (
