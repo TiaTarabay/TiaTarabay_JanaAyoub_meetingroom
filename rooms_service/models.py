@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, Boolean
 from common.db.connection import Base
 
 class Room(Base):
@@ -8,4 +8,5 @@ class Room(Base):
     name = Column(String, unique=True, nullable=False)
     capacity = Column(Integer, nullable=False)
     equipment = Column(String, nullable=False)
-    location = Column(String, nullable=False)   # <-- ADD THIS
+    location = Column(String, nullable=False)
+    available = Column(Boolean, default=True)

@@ -10,9 +10,7 @@ from fastapi.security import OAuth2PasswordBearer
 
 router = APIRouter()
 
-# --------------------------------------
 # FIXED AUTH: Correct CurrentUser wrapper
-# --------------------------------------
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/login")
 
@@ -33,9 +31,7 @@ def require_admin(user: User):
         )
 
 
-# ============================
 #       PUBLIC ENDPOINTS
-# ============================
 
 @router.get("/", response_model=list[RoomRead])
 def get_all_rooms(db: Session = Depends(get_db)):
@@ -50,9 +46,7 @@ def get_room(room_id: int, db: Session = Depends(get_db)):
     return room
 
 
-# ============================
 #     ADMIN-ONLY ENDPOINTS
-# ============================
 
 @router.post("/", response_model=RoomRead)
 def create_room(
@@ -99,12 +93,12 @@ def update_room(
         room.equipment = payload.equipment
     if payload.location is not None:
         room.location = payload.location
-
+    if payload.available is not None:            
+        room.available = payload.available       
 
     db.commit()
     db.refresh(room)
     return room
-
 
 @router.delete("/{room_id}", status_code=204)
 def delete_room(
@@ -121,3 +115,4 @@ def delete_room(
     db.delete(room)
     db.commit()
     return
+

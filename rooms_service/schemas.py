@@ -1,22 +1,31 @@
 from pydantic import BaseModel
+from typing import Optional
 
-class RoomBase(BaseModel):
-    name: str | None = None
-    capacity: int | None = None
-    equipment: str | None = None
-    location: str | None = None   # <-- add this
-
-class RoomCreate(RoomBase):
+# CREATE 
+class RoomCreate(BaseModel):
     name: str
     capacity: int
     equipment: str
     location: str
+    available: bool = True
 
-class RoomUpdate(RoomBase):
-    pass
+# UPDATE 
+class RoomUpdate(BaseModel):
+    name: Optional[str] = None
+    capacity: Optional[int] = None
+    equipment: Optional[str] = None
+    location: Optional[str] = None
+    available: Optional[bool] = None
 
-class RoomRead(RoomBase):
+# READ
+class RoomRead(BaseModel):
     id: int
+    name: str
+    capacity: int
+    equipment: str
+    location: str
+    available: bool
 
-    class Config:
-        orm_mode = True
+    model_config = {
+        "from_attributes": True
+    }
