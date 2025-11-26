@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Rooms Service &#8212; Smart Meeting Room System 1.0.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=27fed22d" />
+    <script src="_static/documentation_options.js?v=8d563738"></script>
+    <script src="_static/doctools.js?v=9bcbadda"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Roles &amp; RBAC" href="roles_rbac.html" />
+    <link rel="prev" title="Users Service" href="users_service.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="module-rooms_service.routers">
+<span id="rooms-service"></span><h1>Rooms Service<a class="headerlink" href="#module-rooms_service.routers" title="Link to this heading">¶</a></h1>
+<section id="rooms-service-api-router">
+<h2>Rooms Service API Router<a class="headerlink" href="#rooms-service-api-router" title="Link to this heading">¶</a></h2>
+<p>This module contains all API endpoints related to managing meeting rooms.
+It supports both public read operations and restricted administrative
+operations such as creating, updating, and deleting rooms.</p>
+<dl class="simple">
+<dt>Roles:</dt><dd><ul class="simple">
+<li><p>Admin: Full access (create/update/delete rooms)</p></li>
+<li><p>Facility Manager: Has the same permissions as admin for room management</p></li>
+<li><p>Regular User / Moderator / Auditor: Read-only access</p></li>
+</ul>
+</dd>
+<dt>Endpoints:</dt><dd><ul class="simple">
+<li><p>GET /rooms/              → List all rooms (public)</p></li>
+<li><p>GET /rooms/{id}          → Get a single room (public)</p></li>
+<li><p>POST /rooms/             → Create a new room (admin/FM only)</p></li>
+<li><p>PUT /rooms/{id}          → Update an existing room (admin/FM only)</p></li>
+<li><p>DELETE /rooms/{id}       → Delete a room (admin/FM only)</p></li>
+</ul>
+</dd>
+</dl>
+</section>
+<dl class="py function">
+<dt class="sig sig-object py" id="rooms_service.routers.CurrentUser">
+<span class="sig-prename descclassname"><span class="pre">rooms_service.routers.</span></span><span class="sig-name descname"><span class="pre">CurrentUser</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">token:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">Depends(dependency=&lt;fastapi.security.oauth2.OAuth2PasswordBearer</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_cache=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scope=None)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">db:</span> <span class="pre">~sqlalchemy.orm.session.Session</span> <span class="pre">=</span> <span class="pre">Depends(dependency=&lt;function</span> <span class="pre">get_db&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_cache=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scope=None)</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rooms_service.routers.CurrentUser" title="Link to this definition">¶</a></dt>
+<dd><p>Retrieve the currently authenticated user based on the JWT access token.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>token</strong> (<em>str</em>) – Bearer token provided in the Authorization header.</p></li>
+<li><p><strong>db</strong> (<em>Session</em>) – Database session dependency.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The authenticated user object.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="users_service.html#users_service.models.User" title="users_service.models.User">User</a></p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>HTTPException</strong> – If authentication fails.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rooms_service.routers.create_room">
+<span class="sig-prename descclassname"><span class="pre">rooms_service.routers.</span></span><span class="sig-name descname"><span class="pre">create_room</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">payload:</span> <span class="pre">~rooms_service.schemas.RoomCreate</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">db:</span> <span class="pre">~sqlalchemy.orm.session.Session</span> <span class="pre">=</span> <span class="pre">Depends(dependency=&lt;function</span> <span class="pre">get_db&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_cache=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scope=None)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_user:</span> <span class="pre">~users_service.models.User</span> <span class="pre">=</span> <span class="pre">Depends(dependency=&lt;function</span> <span class="pre">CurrentUser&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_cache=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scope=None)</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rooms_service.routers.create_room" title="Link to this definition">¶</a></dt>
+<dd><p>Create a new meeting room.</p>
+<p>Only administrators and facility managers are allowed to perform this action.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>payload</strong> (<a class="reference internal" href="#rooms_service.schemas.RoomCreate" title="rooms_service.schemas.RoomCreate"><em>RoomCreate</em></a>) – The details of the room to be created.</p></li>
+<li><p><strong>db</strong> (<em>Session</em>) – Database session.</p></li>
+<li><p><strong>current_user</strong> (<a class="reference internal" href="users_service.html#users_service.models.User" title="users_service.models.User"><em>User</em></a>) – Authenticated user performing the request.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The created room.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#rooms_service.schemas.RoomRead" title="rooms_service.schemas.RoomRead">RoomRead</a></p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>HTTPException</strong> – If a room with the same name already exists.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rooms_service.routers.delete_room">
+<span class="sig-prename descclassname"><span class="pre">rooms_service.routers.</span></span><span class="sig-name descname"><span class="pre">delete_room</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">room_id:</span> <span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">db:</span> <span class="pre">~sqlalchemy.orm.session.Session</span> <span class="pre">=</span> <span class="pre">Depends(dependency=&lt;function</span> <span class="pre">get_db&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_cache=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scope=None)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_user:</span> <span class="pre">~users_service.models.User</span> <span class="pre">=</span> <span class="pre">Depends(dependency=&lt;function</span> <span class="pre">CurrentUser&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_cache=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scope=None)</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rooms_service.routers.delete_room" title="Link to this definition">¶</a></dt>
+<dd><p>Delete a room from the system.</p>
+<p>Only administrators and facility managers are permitted to delete rooms.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>room_id</strong> (<em>int</em>) – ID of the room to delete.</p></li>
+<li><p><strong>db</strong> (<em>Session</em>) – Database session.</p></li>
+<li><p><strong>current_user</strong> (<a class="reference internal" href="users_service.html#users_service.models.User" title="users_service.models.User"><em>User</em></a>) – Authenticated user.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>HTTPException</strong> – If the room does not exist.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rooms_service.routers.get_all_rooms">
+<span class="sig-prename descclassname"><span class="pre">rooms_service.routers.</span></span><span class="sig-name descname"><span class="pre">get_all_rooms</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">db:</span> <span class="pre">~sqlalchemy.orm.session.Session</span> <span class="pre">=</span> <span class="pre">Depends(dependency=&lt;function</span> <span class="pre">get_db&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_cache=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scope=None)</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rooms_service.routers.get_all_rooms" title="Link to this definition">¶</a></dt>
+<dd><p>Retrieve a list of all rooms in the system.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>All stored room records.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>list[<a class="reference internal" href="#rooms_service.schemas.RoomRead" title="rooms_service.schemas.RoomRead">RoomRead</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rooms_service.routers.get_room">
+<span class="sig-prename descclassname"><span class="pre">rooms_service.routers.</span></span><span class="sig-name descname"><span class="pre">get_room</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">room_id:</span> <span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">db:</span> <span class="pre">~sqlalchemy.orm.session.Session</span> <span class="pre">=</span> <span class="pre">Depends(dependency=&lt;function</span> <span class="pre">get_db&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_cache=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scope=None)</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rooms_service.routers.get_room" title="Link to this definition">¶</a></dt>
+<dd><p>Retrieve a single room by its ID.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>room_id</strong> (<em>int</em>) – The ID of the room to retrieve.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The room data if found.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#rooms_service.schemas.RoomRead" title="rooms_service.schemas.RoomRead">RoomRead</a></p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>HTTPException</strong> – If the room does not exist.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rooms_service.routers.require_admin">
+<span class="sig-prename descclassname"><span class="pre">rooms_service.routers.</span></span><span class="sig-name descname"><span class="pre">require_admin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">user</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="users_service.html#users_service.models.User" title="users_service.models.User"><span class="pre">User</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rooms_service.routers.require_admin" title="Link to this definition">¶</a></dt>
+<dd><p>Ensure that the current user has admin privileges.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>user</strong> (<a class="reference internal" href="users_service.html#users_service.models.User" title="users_service.models.User"><em>User</em></a>) – The authenticated user.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>HTTPException</strong> – If the user is not an admin.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="rooms_service.routers.update_room">
+<span class="sig-prename descclassname"><span class="pre">rooms_service.routers.</span></span><span class="sig-name descname"><span class="pre">update_room</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">room_id:</span> <span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">payload:</span> <span class="pre">~rooms_service.schemas.RoomUpdate</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">db:</span> <span class="pre">~sqlalchemy.orm.session.Session</span> <span class="pre">=</span> <span class="pre">Depends(dependency=&lt;function</span> <span class="pre">get_db&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_cache=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scope=None)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_user:</span> <span class="pre">~users_service.models.User</span> <span class="pre">=</span> <span class="pre">Depends(dependency=&lt;function</span> <span class="pre">CurrentUser&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_cache=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scope=None)</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rooms_service.routers.update_room" title="Link to this definition">¶</a></dt>
+<dd><p>Update information for an existing room.</p>
+<p>This includes modifying capacity, equipment, location, or availability.
+Only administrators and facility managers can update rooms.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>room_id</strong> (<em>int</em>) – ID of the room to update.</p></li>
+<li><p><strong>payload</strong> (<a class="reference internal" href="#rooms_service.schemas.RoomUpdate" title="rooms_service.schemas.RoomUpdate"><em>RoomUpdate</em></a>) – Fields to update.</p></li>
+<li><p><strong>db</strong> (<em>Session</em>) – Database session.</p></li>
+<li><p><strong>current_user</strong> (<a class="reference internal" href="users_service.html#users_service.models.User" title="users_service.models.User"><em>User</em></a>) – Authenticated user.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The updated room.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#rooms_service.schemas.RoomRead" title="rooms_service.schemas.RoomRead">RoomRead</a></p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>HTTPException</strong> – If the room does not exist.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<section id="room-model">
+<span id="module-rooms_service.models"></span><h2>Room Model<a class="headerlink" href="#room-model" title="Link to this heading">¶</a></h2>
+<p>This module defines the SQLAlchemy model for meeting rooms in the Smart
+Meeting Room Management System. Each room entry stores general room
+information (name, capacity, equipment, location) as well as its availability
+status, which determines whether the room can be booked.</p>
+<dl>
+<dt>Fields:</dt><dd><p>id (int): Primary key identifier for the room.
+name (str): Unique room name chosen by administrators (e.g., “Conference Room A”).
+capacity (int): Maximum number of people the room can hold.
+equipment (str): Comma-separated list of available equipment</p>
+<blockquote>
+<div><p>(e.g., “Projector, Whiteboard, HDMI”).</p>
+</div></blockquote>
+<p>location (str): Physical location of the room (building, floor, room number).
+available (bool): Indicates whether the room is available for booking.</p>
+<blockquote>
+<div><p>If set to False, the room is considered out-of-service.</p>
+</div></blockquote>
+</dd>
+</dl>
+<p>This model is used by the Rooms Service to support all room-related CRUD
+operations performed by administrators and facility managers.</p>
+</section>
+<dl class="py class">
+<dt class="sig sig-object py" id="rooms_service.models.Room">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">rooms_service.models.</span></span><span class="sig-name descname"><span class="pre">Room</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rooms_service.models.Room" title="Link to this definition">¶</a></dt>
+<dd><p>SQLAlchemy model representing a meeting room.</p>
+<p>This table stores the essential information needed to manage rooms in
+the system. A room can be created, updated, deleted, or marked as
+out-of-service by authorized roles (admin and facility manager).</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rooms_service.models.Room.id">
+<span class="sig-name descname"><span class="pre">id</span></span><a class="headerlink" href="#rooms_service.models.Room.id" title="Link to this definition">¶</a></dt>
+<dd><p>Primary key.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rooms_service.models.Room.name">
+<span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#rooms_service.models.Room.name" title="Link to this definition">¶</a></dt>
+<dd><p>Unique room name (cannot be null).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rooms_service.models.Room.capacity">
+<span class="sig-name descname"><span class="pre">capacity</span></span><a class="headerlink" href="#rooms_service.models.Room.capacity" title="Link to this definition">¶</a></dt>
+<dd><p>Seating capacity of the room.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rooms_service.models.Room.equipment">
+<span class="sig-name descname"><span class="pre">equipment</span></span><a class="headerlink" href="#rooms_service.models.Room.equipment" title="Link to this definition">¶</a></dt>
+<dd><p>Equipment list stored as text.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rooms_service.models.Room.location">
+<span class="sig-name descname"><span class="pre">location</span></span><a class="headerlink" href="#rooms_service.models.Room.location" title="Link to this definition">¶</a></dt>
+<dd><p>Human-readable location string.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rooms_service.models.Room.available">
+<span class="sig-name descname"><span class="pre">available</span></span><a class="headerlink" href="#rooms_service.models.Room.available" title="Link to this definition">¶</a></dt>
+<dd><p>Room availability status. Defaults to True.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id0">
+<span class="sig-name descname"><span class="pre">available</span></span><a class="headerlink" href="#id0" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id1">
+<span class="sig-name descname"><span class="pre">capacity</span></span><a class="headerlink" href="#id1" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id2">
+<span class="sig-name descname"><span class="pre">equipment</span></span><a class="headerlink" href="#id2" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id3">
+<span class="sig-name descname"><span class="pre">id</span></span><a class="headerlink" href="#id3" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id4">
+<span class="sig-name descname"><span class="pre">location</span></span><a class="headerlink" href="#id4" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id5">
+<span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#id5" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<section id="pydantic-schemas-for-the-rooms-service">
+<span id="module-rooms_service.schemas"></span><h2>Pydantic Schemas for the Rooms Service<a class="headerlink" href="#pydantic-schemas-for-the-rooms-service" title="Link to this heading">¶</a></h2>
+<p>This module defines the data validation schemas used by the Rooms Service.
+These schemas ensure that incoming requests contain valid data and that
+responses returned to clients follow a consistent structure.</p>
+<dl class="simple">
+<dt>Schemas included:</dt><dd><ul class="simple">
+<li><p>RoomCreate : Used when creating a new room.</p></li>
+<li><p>RoomUpdate : Used when partially updating an existing room.</p></li>
+<li><p>RoomRead   : Used when returning room information to the client.</p></li>
+</ul>
+</dd>
+</dl>
+</section>
+<dl class="py class">
+<dt class="sig sig-object py" id="rooms_service.schemas.RoomCreate">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">rooms_service.schemas.</span></span><span class="sig-name descname"><span class="pre">RoomCreate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">capacity</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">equipment</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">location</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">available</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rooms_service.schemas.RoomCreate" title="Link to this definition">¶</a></dt>
+<dd><p>Schema for creating a new meeting room.</p>
+<dl>
+<dt>Required by:</dt><dd><p>POST /rooms/</p>
+</dd>
+<dt>Fields:</dt><dd><p>name (str): Unique name of the room.
+capacity (int): Maximum number of occupants.
+equipment (str): Comma-separated list of available equipment.
+location (str): Physical location (building, floor, room number).
+available (bool): Whether the room is available for booking.</p>
+<blockquote>
+<div><p>Defaults to True.</p>
+</div></blockquote>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rooms_service.schemas.RoomCreate.available">
+<span class="sig-name descname"><span class="pre">available</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#rooms_service.schemas.RoomCreate.available" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rooms_service.schemas.RoomCreate.capacity">
+<span class="sig-name descname"><span class="pre">capacity</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#rooms_service.schemas.RoomCreate.capacity" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rooms_service.schemas.RoomCreate.equipment">
+<span class="sig-name descname"><span class="pre">equipment</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#rooms_service.schemas.RoomCreate.equipment" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rooms_service.schemas.RoomCreate.location">
+<span class="sig-name descname"><span class="pre">location</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#rooms_service.schemas.RoomCreate.location" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rooms_service.schemas.RoomCreate.model_config">
+<span class="sig-name descname"><span class="pre">model_config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar</span><span class="p"><span class="pre">[</span></span><span class="pre">ConfigDict</span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#rooms_service.schemas.RoomCreate.model_config" title="Link to this definition">¶</a></dt>
+<dd><p>Configuration for the model, should be a dictionary conforming to [<cite>ConfigDict</cite>][pydantic.config.ConfigDict].</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rooms_service.schemas.RoomCreate.name">
+<span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#rooms_service.schemas.RoomCreate.name" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="rooms_service.schemas.RoomRead">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">rooms_service.schemas.</span></span><span class="sig-name descname"><span class="pre">RoomRead</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">capacity</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">equipment</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">location</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">available</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rooms_service.schemas.RoomRead" title="Link to this definition">¶</a></dt>
+<dd><p>Schema returned when sending room information to the client.</p>
+<dl class="simple">
+<dt>Used by:</dt><dd><p>GET /rooms/
+GET /rooms/{room_id}
+POST /rooms/
+PUT /rooms/{room_id}</p>
+</dd>
+<dt>Fields:</dt><dd><p>id (int): Unique identifier of the room.
+name (str): Name of the room.
+capacity (int): Seating capacity.
+equipment (str): Equipment list.
+location (str): Physical location of the room.
+available (bool): Whether the room is currently available.</p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rooms_service.schemas.RoomRead.available">
+<span class="sig-name descname"><span class="pre">available</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#rooms_service.schemas.RoomRead.available" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rooms_service.schemas.RoomRead.capacity">
+<span class="sig-name descname"><span class="pre">capacity</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#rooms_service.schemas.RoomRead.capacity" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rooms_service.schemas.RoomRead.equipment">
+<span class="sig-name descname"><span class="pre">equipment</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#rooms_service.schemas.RoomRead.equipment" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rooms_service.schemas.RoomRead.id">
+<span class="sig-name descname"><span class="pre">id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#rooms_service.schemas.RoomRead.id" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rooms_service.schemas.RoomRead.location">
+<span class="sig-name descname"><span class="pre">location</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#rooms_service.schemas.RoomRead.location" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rooms_service.schemas.RoomRead.model_config">
+<span class="sig-name descname"><span class="pre">model_config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar</span><span class="p"><span class="pre">[</span></span><span class="pre">ConfigDict</span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'from_attributes':</span> <span class="pre">True}</span></em><a class="headerlink" href="#rooms_service.schemas.RoomRead.model_config" title="Link to this definition">¶</a></dt>
+<dd><p>Configuration for the model, should be a dictionary conforming to [<cite>ConfigDict</cite>][pydantic.config.ConfigDict].</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rooms_service.schemas.RoomRead.name">
+<span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#rooms_service.schemas.RoomRead.name" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="rooms_service.schemas.RoomUpdate">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">rooms_service.schemas.</span></span><span class="sig-name descname"><span class="pre">RoomUpdate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">capacity</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">equipment</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">location</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">available</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#rooms_service.schemas.RoomUpdate" title="Link to this definition">¶</a></dt>
+<dd><p>Schema for updating an existing room.</p>
+<dl class="simple">
+<dt>Used by:</dt><dd><p>PUT /rooms/{room_id}</p>
+</dd>
+</dl>
+<p>All fields are optional to allow partial updates.
+Only fields provided by the client will be modified.</p>
+<dl class="simple">
+<dt>Fields:</dt><dd><p>name (str | None): New room name.
+capacity (int | None): Updated seating capacity.
+equipment (str | None): Updated equipment list.
+location (str | None): Updated room location.
+available (bool | None): Availability flag (True/False).</p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rooms_service.schemas.RoomUpdate.available">
+<span class="sig-name descname"><span class="pre">available</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#rooms_service.schemas.RoomUpdate.available" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rooms_service.schemas.RoomUpdate.capacity">
+<span class="sig-name descname"><span class="pre">capacity</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#rooms_service.schemas.RoomUpdate.capacity" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rooms_service.schemas.RoomUpdate.equipment">
+<span class="sig-name descname"><span class="pre">equipment</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#rooms_service.schemas.RoomUpdate.equipment" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rooms_service.schemas.RoomUpdate.location">
+<span class="sig-name descname"><span class="pre">location</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#rooms_service.schemas.RoomUpdate.location" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rooms_service.schemas.RoomUpdate.model_config">
+<span class="sig-name descname"><span class="pre">model_config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar</span><span class="p"><span class="pre">[</span></span><span class="pre">ConfigDict</span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#rooms_service.schemas.RoomUpdate.model_config" title="Link to this definition">¶</a></dt>
+<dd><p>Configuration for the model, should be a dictionary conforming to [<cite>ConfigDict</cite>][pydantic.config.ConfigDict].</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="rooms_service.schemas.RoomUpdate.name">
+<span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#rooms_service.schemas.RoomUpdate.name" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">Smart Meeting Room System</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="users_service.html">Users Service</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Rooms Service</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#rooms-service-api-router">Rooms Service API Router</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#rooms_service.routers.CurrentUser"><code class="docutils literal notranslate"><span class="pre">CurrentUser()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#rooms_service.routers.create_room"><code class="docutils literal notranslate"><span class="pre">create_room()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#rooms_service.routers.delete_room"><code class="docutils literal notranslate"><span class="pre">delete_room()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#rooms_service.routers.get_all_rooms"><code class="docutils literal notranslate"><span class="pre">get_all_rooms()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#rooms_service.routers.get_room"><code class="docutils literal notranslate"><span class="pre">get_room()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#rooms_service.routers.require_admin"><code class="docutils literal notranslate"><span class="pre">require_admin()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#rooms_service.routers.update_room"><code class="docutils literal notranslate"><span class="pre">update_room()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#room-model">Room Model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#rooms_service.models.Room"><code class="docutils literal notranslate"><span class="pre">Room</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#pydantic-schemas-for-the-rooms-service">Pydantic Schemas for the Rooms Service</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#rooms_service.schemas.RoomCreate"><code class="docutils literal notranslate"><span class="pre">RoomCreate</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#rooms_service.schemas.RoomRead"><code class="docutils literal notranslate"><span class="pre">RoomRead</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#rooms_service.schemas.RoomUpdate"><code class="docutils literal notranslate"><span class="pre">RoomUpdate</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="roles_rbac.html">Roles &amp; RBAC</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="users_service.html" title="previous chapter">Users Service</a></li>
+      <li>Next: <a href="roles_rbac.html" title="next chapter">Roles &amp; RBAC</a></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.2.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="_sources/rooms_service.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
