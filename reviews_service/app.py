@@ -20,6 +20,7 @@ from sqlalchemy.orm import Session
 from functools import wraps
 from typing import Optional
 
+import bleach
 
 from common.db.connection import engine, Base, SessionLocal
 from reviews_service.models import Review
@@ -173,6 +174,13 @@ def create_review():
         if field not in data:
             return jsonify({"error": f"Missing field: {field}"}), 400
 
+    # Type validation for IDs
+    try:
+        user_id = int(data["user_id"])
+        room_id = int(data["room_id"])
+    except (TypeError, ValueError):
+        return jsonify({"error": "user_id and room_id must be integers"}), 400
+
     # ---- Self-only check for normal users & facility managers ----
     current_user_id = get_current_user_id()
     if role in {"regular_user", "facility_manager"}:
@@ -189,6 +197,20 @@ def create_review():
 
     if rating < 1 or rating > 5:
         return jsonify({"error": "rating must be between 1 and 5"}), 400
+
+    # Comment sanitization: optional, strip whitespace and limit length
+    raw_comment = data.get("comment") or ""
+    comment = raw_comment.strip()
+
+    # Enforce a maximum length to avoid abuse
+    MAX_COMMENT_LENGTH = 500
+    if len(comment) > MAX_COMMENT_LENGTH:
+        return jsonify({
+            "error": f"comment is too long (max {MAX_COMMENT_LENGTH} characters)"
+        }), 400
+
+    # Optional HTML sanitization (prevents embedded scripts/unsafe HTML)
+    safe_comment = bleach.clean(comment)  # or just use `comment` if you skip bleach
 
     db = get_db()
     try:
@@ -278,7 +300,17 @@ def update_review(review_id: int):
             review.rating = rating
 
         if "comment" in data:
-            review.comment = data["comment"]
+            raw_comment = data["comment"] or ""
+            comment = raw_comment.strip()
+
+            MAX_COMMENT_LENGTH = 500
+            if len(comment) > MAX_COMMENT_LENGTH:
+                return jsonify({
+                    "error": f"comment is too long (max {MAX_COMMENT_LENGTH} characters)"
+                }), 400
+
+            # sanitize HTML if using bleach
+            review.comment = bleach.clean(comment)
 
         db.commit()
         db.refresh(review)
