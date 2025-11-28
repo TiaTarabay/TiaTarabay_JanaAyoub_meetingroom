@@ -20,9 +20,6 @@ def test_get_rooms(client_rooms):
     assert isinstance(response.json(), list)
 
 
-# ---------------------------
-# NEW SAFE TESTS
-# ---------------------------
 
 def test_get_all_rooms_empty(client_rooms):
     res = client_rooms.get("/rooms/")

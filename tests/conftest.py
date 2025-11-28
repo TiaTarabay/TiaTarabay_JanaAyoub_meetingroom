@@ -18,9 +18,7 @@ from rooms_service.app import app as rooms_app
 from users_service.models import User
 from rooms_service.models import Room
 
-# ----------------------------
 # TEST DATABASE SETUP
-# ----------------------------
 
 TEST_DB_URL = "sqlite:///./test.db"
 
@@ -53,10 +51,7 @@ def setup_test_db():
     yield
     Base.metadata.drop_all(bind=engine)
 
-
-# ----------------------------
 # CLIENT FIXTURES
-# ----------------------------
 
 @pytest.fixture
 def client_users():
@@ -67,9 +62,7 @@ def client_rooms():
     return TestClient(rooms_app)
 
 
-# ----------------------------
 # ADMIN CREATION FIXTURE
-# ----------------------------
 
 @pytest.fixture(scope="session")
 def create_admin():
@@ -88,9 +81,7 @@ def create_admin():
     return admin
 
 
-# ----------------------------
 # ADMIN TOKEN FIXTURE
-# ----------------------------
 
 @pytest.fixture
 def admin_token(create_admin):

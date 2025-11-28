@@ -29,9 +29,6 @@ def test_get_all_users(client_users, admin_token):
     assert isinstance(response.json(), list)
 
 
-# ---------------------------
-# NEW SAFE TESTS
-# ---------------------------
 
 def test_register_missing_field(client_users):
     res = client_users.post("/users/register", json={
