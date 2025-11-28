@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+smartmeetingroom.db
+.postman/
+.env
+
+docs/_build/
+
+.coverage
+*.prof
