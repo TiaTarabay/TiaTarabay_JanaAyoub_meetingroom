@@ -6,9 +6,9 @@ It sets up the database tables, loads the API router, and exposes all
 room-related endpoints under the `/rooms` prefix.
 
 The Rooms Service is responsible for:
-- Creating, updating, and deleting meeting rooms (admin + facility manager)
-- Retrieving room details (all roles)
-- Managing room availability (marking rooms out-of-service)
+- Creating, updating, and deleting meeting rooms
+- Retrieving room details
+- Managing room availability
 
 This service communicates with the shared database defined in `common/db/connection.py`.
 """
@@ -16,12 +16,19 @@ This service communicates with the shared database defined in `common/db/connect
 from fastapi import FastAPI
 from .routers import router
 from common.db.connection import Base, engine
+from common.exceptions import add_exception_handlers
 
+# Initialize FastAPI app
 app = FastAPI(title="Rooms Service")
 
-# Create database tables if they do not exist.
-# This ensures the `rooms` table is available when the service starts.
+# Add global exception handlers
+add_exception_handlers(app)
+
+# Create DB tables
 Base.metadata.create_all(bind=engine)
 
-# Include the Rooms API router under the `/rooms` path.
+# Versioned API routes
+app.include_router(router, prefix="/v1/rooms")
+
+# Optional legacy endpoint (backward compatibility)
 app.include_router(router, prefix="/rooms")
