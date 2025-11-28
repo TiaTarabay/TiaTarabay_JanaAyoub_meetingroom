@@ -27,3 +27,33 @@ def test_get_all_users(client_users, admin_token):
     )
     assert response.status_code == 200
     assert isinstance(response.json(), list)
+
+
+# ---------------------------
+# NEW SAFE TESTS
+# ---------------------------
+
+def test_register_missing_field(client_users):
+    res = client_users.post("/users/register", json={
+        "username": "abc"
+        # missing email + password
+    })
+    assert res.status_code == 422
+
+
+def test_login_missing_password(client_users):
+    res = client_users.post("/users/login", json={
+        "username": "admin_test"
+        # missing password
+    })
+    assert res.status_code == 422
+
+
+def test_get_current_user(client_users, create_admin, admin_token):
+    res = client_users.get(
+        "/users/me",
+        headers={"Authorization": f"Bearer {admin_token}"}
+    )
+    assert res.status_code == 200
+    assert res.json()["username"] == "admin_test"
+
