@@ -1,6 +1,6 @@
 """
 Authentication & Security Utilities:
-
+------------------------------------
 This module provides all authentication-related helpers used across the
 microservices in the Smart Meeting Room Management System. It implements
 password hashing, password verification, JWT token creation, and token
@@ -99,9 +99,7 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
     return token
 
 
-# ----------------------------------------
 # Current User Retrieval (JWT Decoding)
-# ----------------------------------------
 
 def get_current_user(
     token: str = Depends(oauth2_scheme),

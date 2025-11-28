@@ -1,6 +1,6 @@
 """
 Rooms Service API Router
-------------------------
+-------------------------
 
 This module contains all API endpoints related to managing meeting rooms.
 It supports both public read operations and restricted administrative

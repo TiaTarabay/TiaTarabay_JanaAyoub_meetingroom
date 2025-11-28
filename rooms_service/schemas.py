@@ -1,6 +1,6 @@
 """
 Pydantic Schemas for the Rooms Service
-
+--------------------------------------
 This module defines the data validation schemas used by the Rooms Service.
 These schemas ensure that incoming requests contain valid data and that
 responses returned to clients follow a consistent structure.

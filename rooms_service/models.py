@@ -1,5 +1,6 @@
 """
 Room Model
+-----------
 
 This module defines the SQLAlchemy model for meeting rooms in the Smart
 Meeting Room Management System. Each room entry stores general room

@@ -1,6 +1,6 @@
 """
 Users Service API Router
-
+-------------------------
 This module implements all user-related API endpoints for the Smart Meeting
 Room Management System. It handles registration, login, profile management,
 and administrative user operations such as role assignments and account deletion.

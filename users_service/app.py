@@ -1,6 +1,6 @@
 """
 Users Service Main Application
-
+------------------------------
 This module initializes the FastAPI application for the Users Service.
 It loads the database models, sets up the required tables, and attaches
 all user-related API routes under the `/users` prefix.

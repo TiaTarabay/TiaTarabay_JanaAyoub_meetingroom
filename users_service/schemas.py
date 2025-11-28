@@ -1,6 +1,6 @@
 """
 Pydantic Schemas for the Users Service
-
+--------------------------------------
 
 This module defines all Pydantic models used for validating input and output
 data in the Users Service. These schemas ensure that user registration,
