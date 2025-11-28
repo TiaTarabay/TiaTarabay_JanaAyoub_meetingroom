@@ -16,7 +16,7 @@ This service communicates with the shared database defined in `common/db/connect
 from fastapi import FastAPI
 from .routers import router
 from common.db.connection import Base, engine
-from common.exceptions import add_exception_handlers
+from common.utils.exceptions import add_exception_handlers
 
 # Initialize FastAPI app
 app = FastAPI(title="Rooms Service")

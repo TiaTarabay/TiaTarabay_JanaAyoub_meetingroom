@@ -54,7 +54,7 @@ from common.auth.auth_backend import (
     create_access_token,
     get_current_user,
 )
-
+from common.utils.rate_limiter import rate_limiter
 router = APIRouter()
 
 # Authentication wrapper using OAuth2 bearer token
@@ -169,6 +169,9 @@ def register_user(payload: UserCreate, db: Session = Depends(get_db)):
 
 @router.post("/login")
 def login(payload: UserLogin, db: Session = Depends(get_db)):
+    rate_limiter(max_requests=3, window_seconds=20, key="login")
+
+    user = db.query(User).filter(User.username == payload.username).first()
     """
     Authenticate a user and return a JWT access token.
 
@@ -182,8 +185,6 @@ def login(payload: UserLogin, db: Session = Depends(get_db)):
     Raises:
         HTTPException: If credentials are incorrect.
     """
-    user = db.query(User).filter(User.username == payload.username).first()
-
     if not user or not verify_password(payload.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -452,3 +453,15 @@ def admin_update_role(
     db.commit()
     db.refresh(user)
     return user
+
+@router.get("/users")
+def get_all_users(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(CurrentUser),
+):
+    rate_limiter(max_requests=5, window_seconds=10, key="get_users")
+
+    require_admin_or_auditor(current_user)
+    return db.query(User).all()
+
+

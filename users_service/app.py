@@ -1,27 +1,21 @@
-"""
-Users Service Main Application
-------------------------------
-This module initializes the FastAPI application for the Users Service.
-It loads the database models, sets up the required tables, and attaches
-all user-related API routes under the `/users` prefix.
-"""
-
 from fastapi import FastAPI
-from .routers import router
+from users_service.routers import router
 from common.db.connection import Base, engine
-from common.exceptions import add_exception_handlers
+from common.utils.exceptions import add_exception_handlers
+from users_service.circuitbreaker_router import circuit_router
 
-# Initialize the FastAPI application for the Users Service
+# 1) Create app first
 app = FastAPI(title="Users Service")
 
-# Add global exception handling
+# 2) Add exception handlers
 add_exception_handlers(app)
 
-# Create database tables if they do not already exist
+# 3) Create database tables
 Base.metadata.create_all(bind=engine)
 
-# API Versioning
+# 4) API Versioning + Routers
 app.include_router(router, prefix="/v1/users")
+app.include_router(circuit_router, prefix="/v1/users")
 
 # Optional legacy path
 app.include_router(router, prefix="/users")
